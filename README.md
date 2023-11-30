@@ -62,7 +62,7 @@ service ExampleService {
     // limit by api key
     option (ratelimit.options) = {
       limit: 1000
-      message: "You have exceeded your rate limit (100 per minute)"
+      message: "You have exceeded your rate limit (1000 per minute)"
       metadata_key: "x-api-key"
     };
   }
