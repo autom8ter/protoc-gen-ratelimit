@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ratelimit;
+
+option go_package = "github.com/autom8ter/proto/gen/ratelimit;ratelimit";
+
+import "google/protobuf/descriptor.proto";
+
+// Method options for rate limiting.
+extend google.protobuf.MethodOptions {
+  // The rate limiting options for this method.
+  repeated RateLimitOptions options = 50000;
+}
+
+// The options for rate limiting a method.
+message RateLimitOptions {
+  // The maximum number of requests that can be per minute.
+  uint64 limit = 1;
+  // The metadata key to use for rate limiting - if the key is not present in the metadata, the request will not be rate limited.
+  string metadata_key = 2;
+  // The message to return when the rate limit is exceeded(Defaults to "Rate limit exceeded").
+  string message = 3;
+}

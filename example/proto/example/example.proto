@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package ratelimit;
+
+option go_package = "github.com/autom8ter/protoc-gen-ratelimit/example/gen/example;example";
+
+import "google/protobuf/empty.proto";
+import "ratelimit/ratelimit.proto";
+
+// Example service is an example of how to configure method based ratelimits(per minute)
+service ExampleService {
+  rpc Allow100PerMinute(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    // limit by authorization header
+    option (ratelimit.options) = {
+      limit: 100
+      message: "You have exceeded your rate limit (100 per minute)"
+      metadata_key: "authorization"
+    };
+    // limit by api key
+    option (ratelimit.options) = {
+      limit: 1000
+      message: "You have exceeded your rate limit (100 per minute)"
+      metadata_key: "x-api-key"
+    };
+  }
+  rpc Allow1PerMinute(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (ratelimit.options) = {
+      limit: 1
+      message: "You have exceeded your rate limit (1 per minute)"
+      metadata_key: "authorization"
+    };
+  }
+}

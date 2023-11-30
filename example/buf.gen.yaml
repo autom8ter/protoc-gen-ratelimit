@@ -1,0 +1,14 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: gen
+    opt: paths=source_relative
+  - plugin: buf.build/grpc/go
+    out: gen
+    opt:
+      - paths=source_relative
+  - plugin: ratelimit
+    out: gen
+    opt:
+      - paths=source_relative
+      - limiter=inmem # inmem or redis
