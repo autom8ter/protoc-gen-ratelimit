@@ -3,6 +3,8 @@ package limiter
 import (
 	"context"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/selector"
 	"google.golang.org/grpc"
 )
 
@@ -10,7 +12,24 @@ import (
 type Limiter func(ctx context.Context) error
 
 // UnaryServerInterceptor returns a new unary server interceptor that performs rate limiting on the request.
-func UnaryServerInterceptor(limiter Limiter) grpc.UnaryServerInterceptor {
+// If no matchers are provided, the limiter will apply to all requests.
+// If matchers are provided, the limiter will only apply to requests that match at least one of the matchers.
+func UnaryServerInterceptor(limiter Limiter, matchers ...selector.Matcher) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if len(matchers) == 0 {
+			return unaryServerInterceptor(limiter)(ctx, req, info, handler)
+		}
+		meta := interceptors.NewServerCallMeta(info.FullMethod, nil, req)
+		for _, matcher := range matchers {
+			if matcher.Match(ctx, meta) {
+				return unaryServerInterceptor(limiter)(ctx, req, info, handler)
+			}
+		}
+		return handler(ctx, req)
+	}
+}
+
+func unaryServerInterceptor(limiter Limiter) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		err := limiter(ctx)
 		if err != nil {
@@ -21,8 +40,27 @@ func UnaryServerInterceptor(limiter Limiter) grpc.UnaryServerInterceptor {
 }
 
 // StreamServerInterceptor returns a new streaming server interceptor that performs rate limiting on the request.
-func StreamServerInterceptor(limiter Limiter) grpc.StreamServerInterceptor {
+// If no matchers are provided, the limiter will apply to all requests.
+// If matchers are provided, the limiter will only apply to requests that match at least one of the matchers.
+func StreamServerInterceptor(limiter Limiter, matchers ...selector.Matcher) grpc.StreamServerInterceptor {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if len(matchers) == 0 {
+			return streamServerInterceptor(limiter)(srv, ss, info, handler)
+		}
+		meta := interceptors.NewServerCallMeta(info.FullMethod, info, nil)
+		for _, matcher := range matchers {
+			if matcher.Match(ss.Context(), meta) {
+				return streamServerInterceptor(limiter)(srv, ss, info, handler)
+			}
+		}
+		return handler(srv, ss)
+	}
+}
+
+// StreamServerInterceptor returns a new streaming server interceptor that performs rate limiting on the request.
+func streamServerInterceptor(limiter Limiter) grpc.StreamServerInterceptor {
 	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+
 		err := limiter(stream.Context())
 		if err != nil {
 			return err
