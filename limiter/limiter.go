@@ -30,3 +30,16 @@ func StreamServerInterceptor(limiter Limiter) grpc.StreamServerInterceptor {
 		return handler(srv, stream)
 	}
 }
+
+// Chain returns a Limiter that executes each limiter in sequence.
+// If any of the limiters returns an error, the chain stops executing and returns that error.
+func Chain(limiters ...Limiter) Limiter {
+	return func(ctx context.Context) error {
+		for _, limiter := range limiters {
+			if err := limiter(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
