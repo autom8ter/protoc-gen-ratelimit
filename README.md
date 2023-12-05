@@ -26,7 +26,18 @@ The plugin can be installed with the following command:
 
 ## Code Generation
 
-buf.gen.yaml example:
+Add the proto file to your protobuf directory(usually `proto/`):
+
+    mkdir -p proto/ratelimit
+    curl -sSL https://raw.githubusercontent.com/autom8ter/proto/master/proto/ratelimit/ratelimit.proto > proto/ratelimit/ratelimit.proto
+
+You can then import the proto file in your proto files:
+
+```proto
+import "ratelimit/ratelimit.proto";
+```
+
+To generate the code, you can add the following to your `buf.gen.yaml` file:
 
 ```yaml
 version: v1
@@ -44,6 +55,7 @@ plugins:
       - paths=source_relative
       - limiter=inmem # or limiter=redis
 ```
+See [buf.build](https://buf.build/docs/ecosystem/cli-overview) for more information on how to use `buf` to generate code.
 
 ## Example
 
